@@ -19,8 +19,6 @@ export async function login({ email, password }: LoginForm) {
 	return user
 }
 
-// --SESSION--
-
 let sessionSecret = process.env.SESSION_SECRET
 if (!sessionSecret) {
 	throw new Error('SESSION_SECRET must be set')
@@ -46,4 +44,30 @@ export async function createUserSession(userId: string, redirectTo: string) {
 			'Set-cookie': await storage.commitSession(session),
 		},
 	})
+}
+
+export function getUserSession(request: Request) {
+	return storage.getSession(request.headers.get('Cookie'))
+}
+
+export async function getUserId(request: Request) {
+	let session = await getUserSession(request)
+	let userId = session.get('userId')
+
+	if (!userId || typeof userId !== 'string') return null
+	return userId
+}
+
+export async function requireUserId(
+	request: Request,
+	redirectTo: string = new URL(request.url).pathname
+) {
+	let session = await getUserSession(request)
+	let userId = session.get('userId')
+
+	if (!userId || typeof userId !== 'string') {
+		throw redirect(`/login`)
+	}
+
+	return userId
 }
