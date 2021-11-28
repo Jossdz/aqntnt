@@ -10,7 +10,7 @@ import {
 } from 'remix'
 import type { LinksFunction } from 'remix'
 
-import BootstrapStyles from '~/styles/bootstrap.css'
+import BootstrapStyles from '~/styles/bootstrap.min.css'
 import darkStylesUrl from '~/styles/dark.css'
 
 // https://remix.run/api/app#links
@@ -170,12 +170,17 @@ function Layout({ children }: { children: React.ReactNode }) {
 					</div>
 				</nav>
 			</header>
-			<div className="pt-2">
-				<div className="container remix-app__main-content">{children}</div>
+			<div>
+				<div
+					className="container remix-app__main-content pt-5"
+					style={{ height: 'calc(100vh - 56px - 40px)' }}
+				>
+					{children}
+				</div>
 			</div>
 			<footer className="remix-app__footer">
 				<div className="container remix-app__footer-content">
-					<p>&copy; You!</p>
+					<p>&copy; Jossdz!</p>
 				</div>
 			</footer>
 		</div>

@@ -1,6 +1,13 @@
-import { Form, ActionFunction, redirect, useActionData } from 'remix'
+import {
+	Form,
+	ActionFunction,
+	redirect,
+	useActionData,
+	useSearchParams,
+} from 'remix'
 import { hash } from '~/utils/hash.server'
 import prisma from '~/utils/db.server'
+import { createUserSession, login } from '~/utils/session.server'
 
 export const action: ActionFunction = async ({ request }) => {
 	const formData = await request.formData()
@@ -12,43 +19,42 @@ export const action: ActionFunction = async ({ request }) => {
 	if (!email) errors.email = true
 	if (!password) errors.password = true
 	if (!email.includes('@') || !email.includes('.com')) errors.emailFormat = true
-	if (password.length < 6) errors.passwordLength = true
 
 	if (Object.keys(errors).length) {
 		return errors
 	}
 
-	const hashPass = await hash(password)
-
-	try {
-		await prisma.user.create({
-			data: {
-				email,
-				password: hashPass,
-			},
-		})
-	} catch (error) {
-		errors.duplicated = true
-		return errors
+	let user = await login({ email, password })
+	console.log('User', { user })
+	if (!user) {
+		return {
+			formError: `email/Password combination is incorrect`,
+		}
 	}
 
-	return redirect('/login')
+	return createUserSession(user.id, '/dashboard')
 }
 
 const Index = () => {
 	let errors = useActionData()
+	let [searchParams] = useSearchParams()
 	return (
 		<div className="row justify-content-md-center">
 			<div className="col-md-12 col-lg-4">
-				<h1>Signup</h1>
+				<h1>Login</h1>
 				<hr />
-				{errors?.duplicated && (
+				{errors?.formError && (
 					<div className="alert alert-danger" role="alert">
-						Email already exists
+						Error: Check your email and password
 					</div>
 				)}
 				<Form method="post">
 					<div className="mb-3">
+						<input
+							type="hidden"
+							name="redirectTo"
+							value={searchParams.get('redirectTo') ?? undefined}
+						/>
 						<label htmlFor="email" className="form-label">
 							Email:
 						</label>
@@ -76,14 +82,12 @@ const Index = () => {
 						/>
 						<div className="form-text text-danger">
 							{errors?.password && 'Password is required.'}
-							{errors?.passwordLength &&
-								'Password must have at least 6 characters.'}
 						</div>
 					</div>
 
 					<div className="d-grid gap-2">
 						<button className="btn btn-primary" type="submit">
-							Signup
+							Login
 						</button>
 					</div>
 				</Form>
